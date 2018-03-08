@@ -134,9 +134,9 @@ exports.testCmd = (rl, id) => {
 				right_answer = quiz.answer.toLowerCase().trim();
 				log("Su respuesta es: ");
 				if (my_answer === right_answer){
-					biglog("Correcta", "green");
+					log("Correcta", "green");
 				}else{
-					biglog("Incorrecta", "red");
+					log("Incorrecta", "red");
 				}
 				rl.prompt(); // dentro por ser llamada asincrona
 			});
