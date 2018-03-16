@@ -243,7 +243,7 @@ exports.playCmd = rl => {
 				if (toBeResolved.length == 0){
 					log("No hay nada más que preguntar.");
 					log("Fin del examen. Aciertos:");
-					biglog(score, "magenta");
+					log(score, "magenta");
 					rl.prompt();
 				} 
 				else {
@@ -263,12 +263,11 @@ exports.playCmd = rl => {
 							if (my_answer === right_answer){
 								score++;
 								log(`CORRECTO - Lleva ${score} aciertos.`, "green");
-								biglog(score, "green");
 								playOne();
 							}else{
 								log("INCORRECTO.", "red");
 								log("Fin del examen. Aciertos:");
-								biglog(score, "red");
+								log(score, "red");
 								rl.prompt();
 							}
 						});
