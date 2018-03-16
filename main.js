@@ -1,10 +1,10 @@
-//Importaciones
+// Importaciones
 const readline = require('readline');
 const model = require('./model');
 const {log, biglog, errorlog, colorize} = require("./out");
 const cmds = require("./cmds");
 
-//Mensaje inicial
+// Mensaje inicial
 biglog("CORE Quiz", "green");
 
 const rl = readline.createInterface({
