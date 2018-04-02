@@ -7,18 +7,18 @@ const {models} = require("./model");
  * Mostrar la ayuda.
  * @param rl Objeto readline usado para implementar el CLI.
  */
-exports.helpCmd = rl => {
-	log("Comandos:");
-	log("  h|help - Mostrar esta ayuda.");
-	log("  list - Listar todos los quizzes existentes.");
-	log("  show <id> - Mostrar la pregunta y la respuesta del quiz indicado.");
-	log("  add - Anadir un nuevo quiz.");
-	log("  delete <id> - Borrar el quiz indicado.");
-	log("  edit <id> - Editar el quiz indicado.");
-	log("  test <id> - Probar el quiz indicado.");
-	log("  p|play - Jugar a preguntar aleatoriamente todos los quizzes.");
-	log("  credits - Créditos.");
-	log("  q|quit - Salir del programa");
+exports.helpCmd = (socket, rl) => {
+	log(socket, "Comandos:");
+	log(socket, "  h|help - Mostrar esta ayuda.");
+	log(socket, "  list - Listar todos los quizzes existentes.");
+	log(socket, "  show <id> - Mostrar la pregunta y la respuesta del quiz indicado.");
+	log(socket, "  add - Anadir un nuevo quiz.");
+	log(socket, "  delete <id> - Borrar el quiz indicado.");
+	log(socket, "  edit <id> - Editar el quiz indicado.");
+	log(socket, "  test <id> - Probar el quiz indicado.");
+	log(socket, "  p|play - Jugar a preguntar aleatoriamente todos los quizzes.");
+	log(socket, "  credits - Créditos.");
+	log(socket, "  q|quit - Salir del programa");
 	rl.prompt();
 };
 
@@ -26,10 +26,10 @@ exports.helpCmd = rl => {
  * Lista todos los quizzes existentes en el modelo.
  * @param rl Objeto readline usado para implementar el CLI.
  */
-exports.listCmd = rl => {
+exports.listCmd = (socket, rl) => {
 	models.quiz.findAll()
 	.each(quiz =>{
-		log(`[${colorize(quiz.id, 'magenta')}]: ${quiz.question}`);
+		log(socket, `[${colorize(quiz.id, 'magenta')}]: ${quiz.question}`);
 	})
 	.catch(error=>{
 		errorlog(error.message);
@@ -66,17 +66,17 @@ exports.listCmd = rl => {
  * @param rl Objeto readline usado para implementar el CLI.
  * @param id Clave del quiz a mostrar.
  */
-exports.showCmd = (rl,id) => {
+exports.showCmd = (socket, rl,id) => {
 	validateId(id)
 	.then(id=>models.quiz.findById(id))
 	.then(quiz=>{
 		if(!quiz){
 			throw new Error(`No existe un quiz asociado al id=${id}.`);
 		}
-		log(`[${colorize(id, "magenta")}]: ${quiz.question} ${colorize("=>","magenta")} ${quiz.answer}`);
+		log(socket, `[${colorize(id, "magenta")}]: ${quiz.question} ${colorize("=>","magenta")} ${quiz.answer}`);
 	})
 	.catch(error=>{
-		errorlog(error.message);
+		errorlog(socket, error.message);
 	})
 	.then(()=>{
 		rl.prompt();
@@ -91,7 +91,7 @@ exports.showCmd = (rl,id) => {
  * @param rl 	Objeto readline usado para implementar el CLI.
  * @param text 	Pregunta que hay que hacerle al usuario.
  */
-const makeQuestion = (rl,text)=>{
+const makeQuestion = (rl, text)=>{
 	return new Sequelize.Promise((resolve,reject)=>{
 		rl.question(colorize(text,'red'),answer=>{
 			resolve(answer.trim());
@@ -103,7 +103,7 @@ const makeQuestion = (rl,text)=>{
  * Pregunta interactivamente por la pregunta y por la respuesta.
  * @param rl Objeto readline usado para implementar el CLI.
  */
-exports.addCmd = rl => {
+exports.addCmd = (socket, rl) => {
 	makeQuestion(rl, 'Introduzca la pregunta: ')
 	.then(q=>{
 		return makeQuestion(rl, 'Introduzca la respuesta: ')
@@ -115,14 +115,14 @@ exports.addCmd = rl => {
 		return models.quiz.create(quiz);
 	})
 	.then(quiz=>{
-		log(`${colorize("Se ha añadido", "magenta")}: ${quiz.question} ${colorize("=>", "magenta")} ${quiz.answer}`);
+		log(socket, `${colorize("Se ha añadido", "magenta")}: ${quiz.question} ${colorize("=>", "magenta")} ${quiz.answer}`);
 	})
 	.catch(Sequelize.ValidationError, error=>{
-		errorlog('El quiz es erroneo: ');
+		errorlog(socket, 'El quiz es erroneo: ');
 		error.errors.forEach(({message})=>errorlog(message));
 	})
 	.catch(error=>{
-		errorlog(error.message);
+		errorlog(socket, error.message);
 	})
 	.then(()=>{
 		rl.prompt();
@@ -134,11 +134,11 @@ exports.addCmd = rl => {
  * @param rl Objeto readline usado para implementar el CLI.
  * @param id Clave del quiz a borrar.
  */
-exports.deleteCmd = (rl, id) => {
+exports.deleteCmd = (socket, rl, id) => {
 	validateId(id)
 	.then(id=>models.quiz.destroy({where:{id}}))
 	.catch(error=>{
-		errorlog(error.message);
+		errorlog(socket, error.message);
 	})
 	.then(()=>{
 		rl.prompt();
@@ -150,17 +150,17 @@ exports.deleteCmd = (rl, id) => {
  * @param rl Objeto readline usado para implementar el CLI.
  * @param id Clave del quiz a editar.
  */
-exports.editCmd = (rl, id) => {
+exports.editCmd = (socket, rl, id) => {
 	validateId(id)
 	.then(id=>models.quiz.findById(id))
 	.then(quiz=>{
 		if(!quiz){
 			throw new Error(`No existe un quiz asociado al id=${id}.`);
 		}
-		process.stdout.isTTY && setTimeout(() => {rl.write(quiz.question)}, 0);
+		process.stdout.isTTY && setTimeout(() => {socket.write(quiz.question)}, 0);
 		return makeQuestion(rl, 'Introduzca la pregunta: ')
 		.then(q=>{
-			process.stdout.isTTY && setTimeout(() => {rl.write(quiz.answer)}, 0);
+			process.stdout.isTTY && setTimeout(() => {socket.write(quiz.answer)}, 0);
 			return makeQuestion(rl, 'Introduzca la respuesta: ')
 			.then(a=>{
 				quiz.question=q;
@@ -173,15 +173,15 @@ exports.editCmd = (rl, id) => {
 		return quiz.save();
 	})
 	.then(quiz =>{
-		log(`Se ha cambiado el quiz ${colorize(id, "magenta")} por: ${quiz.question} ${colorize("=>", "magenta")} ${quiz.answer}`);
+		log(socket, `Se ha cambiado el quiz ${colorize(id, "magenta")} por: ${quiz.question} ${colorize("=>", "magenta")} ${quiz.answer}`);
 
 	})
 	.catch(Sequelize.ValidationError, error=>{
-		errorlog('El quiz es erroneo: ');
-		error.errors.forEach(({message})=>errorlog(message));
+		errorlog(socket, 'El quiz es erroneo: ');
+		error.errors.forEach(({message})=>errorlog(socket, message));
 	})
 	.catch(error=>{
-		errorlog(error.message);
+		errorlog(socket, error.message);
 	})
 	.then(()=>{
 		rl.prompt();
@@ -193,7 +193,7 @@ exports.editCmd = (rl, id) => {
  * @param rl Objeto readline usado para implementar el CLI.
  * @param id Clave del quiz a probar.
  */
-exports.testCmd = (rl, id) => {
+exports.testCmd = (socket, rl, id) => {
 	validateId(id)
 	.then(id=>models.quiz.findById(id))
 	.then(quiz=>{
@@ -204,20 +204,20 @@ exports.testCmd = (rl, id) => {
 		.then(a=>{
 			my_answer = a.toLowerCase().trim();
 			right_answer = quiz.answer.toLowerCase().trim();
-			log("Su respuesta es: ");
+			log(socket, "Su respuesta es: ");
 			if (my_answer === right_answer){
-				log("Correcta", "green");
+				log(socket, "Correcta", "green");
 			}else{
-				log("Incorrecta", "red");
+				log(socket, "Incorrecta", "red");
 			}
 		});
 	})
 	.catch(Sequelize.ValidationError, error=>{
-		errorlog('El quiz es erroneo: ');
-		error.errors.forEach(({message})=>errorlog(message));
+		errorlog(socket, 'El quiz es erroneo: ');
+		error.errors.forEach(({message})=>errorlog(socket, message));
 	})
 	.catch(error=>{
-		errorlog(error.message);
+		errorlog(socket, error.message);
 	})
 	.then(()=>{
 		rl.prompt();
@@ -229,7 +229,7 @@ exports.testCmd = (rl, id) => {
  * Se gana si se contesta a todos satisfactoriamente.
  * @param rl Objeto readline usado para implementar el CLI.
  */
-exports.playCmd = rl => {
+exports.playCmd = (socket, rl) => {
 	let score = 0;
 	// array con los ids de las preguntas por contestar
 	let toBeResolved = [];
@@ -238,12 +238,11 @@ exports.playCmd = rl => {
 		toBeResolved.push(quiz.id);
 	})
 	.then(()=>{	
-			log (`${toBeResolved.toString()}`);
 			function playOne(){
 				if (toBeResolved.length == 0){
-					log("No hay nada más que preguntar.");
-					log("Fin del examen. Aciertos:");
-					log(score, "magenta");
+					log(socket, "No hay nada más que preguntar.");
+					log(socket, "Fin del examen. Aciertos:");
+					log(socket, score, "magenta");
 					rl.prompt();
 				} 
 				else {
@@ -262,12 +261,12 @@ exports.playCmd = rl => {
 							right_answer = quiz.answer.toLowerCase().trim();
 							if (my_answer === right_answer){
 								score++;
-								log(`CORRECTO - Lleva ${score} aciertos.`, "green");
+								log(socket, `CORRECTO - Lleva ${score} aciertos.`, "green");
 								playOne();
 							}else{
-								log("INCORRECTO.", "red");
-								log("Fin del examen. Aciertos:");
-								log(score, "red");
+								log(socket, "INCORRECTO.", "red");
+								log(socket, "Fin del examen. Aciertos:");
+								log(socket, score, "red");
 								rl.prompt();
 							}
 						});
@@ -278,7 +277,7 @@ exports.playCmd = rl => {
 		}
 	)
 	.catch(Sequelize.ValidationError, error=>{
-		errorlog('El quiz es erroneo: ');
+		errorlog(socket, 'El quiz es erroneo: ');
 		error.errors.forEach(({message})=>errorlog(message));
 	})
 	.catch(error=>{
@@ -293,10 +292,10 @@ exports.playCmd = rl => {
  * Muestra los nombres de los autores de la practica.
  * @param rl Objeto readline usado para implementar el CLI.
  */
-exports.creditsCmd = rl => {
-	log("Autor de la practica:");
-	log("Hans Huaita Loyola", "green");
-	log("Usuario de github: the2hl", "green");
+exports.creditsCmd = (socket, rl) => {
+	log(socket, "Autor de la practica:");
+	log(socket, "Hans Huaita Loyola", "green");
+	log(socket, "Usuario de github: the2hl", "green");
 	rl.prompt();
 };
 
@@ -304,6 +303,7 @@ exports.creditsCmd = rl => {
  * Termina el programa.
  * @param rl Objeto readline usado para implementar el CLI.
  */
-exports.quitCmd = rl => {
+exports.quitCmd = (socket, rl) => {
 	rl.close();
+	socket.end();
 };
